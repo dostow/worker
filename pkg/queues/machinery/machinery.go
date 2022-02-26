@@ -1,33 +1,55 @@
 package machinery
 
 import (
+	"context"
 	"os"
+	"strings"
 
+	"cloud.google.com/go/pubsub"
 	"github.com/RichardKnop/machinery/v1"
 	"github.com/RichardKnop/machinery/v1/config"
 	"github.com/RichardKnop/machinery/v1/log"
 	"github.com/RichardKnop/machinery/v1/tasks"
+	"google.golang.org/api/option"
 )
 
 func loadConfig() (*config.Config, error) {
 	return config.NewFromEnvironment()
 }
 
-func makeServer() (*machinery.Server, error) {
-	uri := os.Getenv("redisURI")
-	if uri == "" {
-		uri = "redis://127.0.0.1:6379"
-	}
+func Server() (*machinery.Server, error) {
+	c, _ := loadConfig()
 
 	cnf := &config.Config{
-		Broker:        uri,
-		DefaultQueue:  "machinery_tasks",
-		ResultBackend: uri,
+		Broker:       c.Broker,
+		DefaultQueue: "machinery_tasks",
+	}
+	if len(c.ResultBackend) > 0 {
+		cnf.ResultBackend = c.ResultBackend
+	}
+	cnf.DefaultQueue = "machinery_tasks"
+	cnf.AMQP = nil
+	if strings.Contains(cnf.Broker, "gcp") {
+		// setup pubsub
+		sf, _ := os.LookupEnv("SERVICE_ACCOUNT_FILE")
+
+		unsplit := strings.Split(cnf.Broker, "/")
+		pubsubClient, err := pubsub.NewClient(
+			context.Background(),
+			unsplit[2],
+			option.WithServiceAccountFile(sf),
+		)
+		if err != nil {
+			panic(err)
+		}
+		cnf.GCPPubSub = &config.GCPPubSubConfig{
+			Client: pubsubClient,
+		}
 	}
 	return machinery.NewServer(cnf)
 }
 func startServer(tasks map[string]interface{}) (*machinery.Server, error) {
-	server, err := makeServer()
+	server, err := Server()
 	if err != nil {
 		return nil, err
 	}
