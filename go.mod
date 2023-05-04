@@ -2,12 +2,23 @@ module github.com/dostow/worker
 
 go 1.17
 
-require github.com/RichardKnop/machinery v1.10.6
+require (
+	github.com/RichardKnop/machinery v1.10.6
+	github.com/stretchr/testify v1.7.2
+)
+
+require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
+)
 
 require (
 	cloud.google.com/go v0.76.0 // indirect
-	cloud.google.com/go/pubsub v1.10.0 // indirect
+	cloud.google.com/go/pubsub v1.10.0
 	github.com/RichardKnop/logging v0.0.0-20190827224416-1a693bdd4fae // indirect
+	github.com/apex/log v1.9.0
+	github.com/aws/aws-lambda-go v1.40.0
 	github.com/aws/aws-sdk-go v1.37.16 // indirect
 	github.com/bradfitz/gomemcache v0.0.0-20190913173617-a41fca850d0b // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
@@ -49,7 +60,7 @@ require (
 	golang.org/x/text v0.3.5 // indirect
 	golang.org/x/tools v0.1.0 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
-	google.golang.org/api v0.39.0 // indirect
+	google.golang.org/api v0.39.0
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20210207032614-bba0dbe2a9ea // indirect
 	google.golang.org/grpc v1.35.0 // indirect
