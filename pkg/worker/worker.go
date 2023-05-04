@@ -23,22 +23,23 @@ type Worker struct {
 	Config  string `help:"general configuration in json"`
 	Param   string `help:"parameters for request in json"`
 	Data    string `help:"data to send"`
+	handler WorkerHandler
 }
 
 // Run run the worker
-func (w *Worker) Run(name string, handler WorkerHandler) error {
+func (w *Worker) Run() error {
 	log.SetLevel(log.DebugLevel)
 	if w.Command == "lambda" {
-		lambda.Start(handler)
+		lambda.Start(w.handler)
 	} else if w.Command == "send" {
-		return handler.Handle(w.Config, w.Param, w.Data, "")
+		return w.handler.Handle(w.Config, w.Param, w.Data, "")
 	} else if w.Command == "dispatch" {
 		server, err := machinery.Server()
 		if err != nil {
 			return err
 		}
 		sig := &tasks.Signature{
-			Name: name,
+			Name: w.Name,
 			// RetryCount: 3,
 			Args: []tasks.Arg{
 				{
@@ -63,12 +64,11 @@ func (w *Worker) Run(name string, handler WorkerHandler) error {
 
 		return err
 	}
-	return machinery.Worker(w.ID, map[string]interface{}{
-		name: handler.Handle,
-	})
+	handlers := map[string]interface{}{w.Name: w.handler.Handle}
+	return machinery.Worker(w.ID, handlers)
 }
 
 // NewWorker new worker
-func NewWorker(name, build string) *Worker {
-	return &Worker{Name: name, Build: build}
+func NewWorker(handler WorkerHandler) *Worker {
+	return &Worker{handler: handler}
 }
