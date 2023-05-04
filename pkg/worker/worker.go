@@ -5,7 +5,7 @@ import (
 
 	"github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/apex/log"
-	"github.com/dostow/worker/pkg/queues/lambda"
+	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/dostow/worker/pkg/queues/machinery"
 )
 
@@ -29,7 +29,7 @@ type Worker struct {
 func (w *Worker) Run(name string, handler WorkerHandler) error {
 	log.SetLevel(log.DebugLevel)
 	if w.Command == "lambda" {
-		lambda.LambdaWorker(handler)
+		lambda.Start(handler)
 	} else if w.Command == "send" {
 		return handler.Handle(w.Config, w.Param, w.Data, "")
 	} else if w.Command == "dispatch" {
