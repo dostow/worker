@@ -2,15 +2,11 @@ module github.com/dostow/worker
 
 go 1.17
 
-require (
-	github.com/RichardKnop/machinery v1.10.6
-	github.com/stretchr/testify v1.7.2
-)
+require github.com/RichardKnop/machinery v1.10.6
 
 require (
-	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.0 // indirect
 )
 
 require (
@@ -19,7 +15,7 @@ require (
 	github.com/RichardKnop/logging v0.0.0-20190827224416-1a693bdd4fae // indirect
 	github.com/apex/log v1.9.0
 	github.com/aws/aws-lambda-go v1.40.0
-	github.com/aws/aws-sdk-go v1.37.16 // indirect
+	github.com/aws/aws-sdk-go v1.37.16
 	github.com/bradfitz/gomemcache v0.0.0-20190913173617-a41fca850d0b // indirect
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
@@ -43,6 +39,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/streadway/amqp v1.0.0 // indirect
+	github.com/tidwall/gjson v1.14.4
 	github.com/xdg/scram v0.0.0-20180814205039-7eeb5667e42c // indirect
 	github.com/xdg/stringprep v1.0.0 // indirect
 	go.mongodb.org/mongo-driver v1.4.6 // indirect

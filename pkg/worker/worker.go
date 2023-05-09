@@ -2,16 +2,22 @@ package worker
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
+	m "github.com/RichardKnop/machinery/v1"
 	"github.com/RichardKnop/machinery/v1/tasks"
 	"github.com/apex/log"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/dostow/worker/pkg/messages"
 	"github.com/dostow/worker/pkg/queues/machinery"
+	"github.com/tidwall/gjson"
 )
 
 type WorkerHandler interface {
 	Invoke(ctx context.Context, payload []byte) ([]byte, error)
 	Handle(config, param, data, traceID string) error
+	Name() string
 }
 
 // Worker a fcm worker that sends messages to centrifuge
@@ -26,11 +32,60 @@ type Worker struct {
 	handler WorkerHandler
 }
 
+type LambdaHandler struct {
+	worker  *m.Worker
+	handler lambda.Handler
+}
+
+func (h *LambdaHandler) Invoke(ctx context.Context, payload []byte) ([]byte, error) {
+	var err error
+	sqsMessage := messages.SQSMessage{}
+	if err = json.Unmarshal(payload, &sqsMessage); err == nil {
+		for _, record := range sqsMessage.Records {
+			body := *record.Body
+			if gjson.Get(body, "Name").Exists() {
+				sig := &tasks.Signature{}
+				if err = json.Unmarshal([]byte(body), &sig); err == nil {
+					err = h.worker.Process(sig)
+					if err != nil {
+						return nil, fmt.Errorf("machinery could not process task - %s", err.Error())
+					}
+					// state, err := h.worker.GetServer().GetBackend().GetState(sig.UUID)
+					// if err == nil {
+					// 	fmt.Println(state)
+					// }
+					// if broker, ok := h.worker.GetServer().GetBroker().(*sqs.Broker); ok {
+					// 	broker.DeleteReceiptHandler(record.ReceiptHandle)
+					// }
+					return nil, err
+				} else {
+					log.WithField("body", body).Debugf("could not parse signature - %s", err.Error())
+				}
+			} else {
+				// if broker, ok := h.worker.GetServer().GetBroker().(*sqs.Broker); ok {
+				// 	broker.DeleteReceiptHandler(record.ReceiptHandle)
+				// }
+			}
+		}
+	}
+	return h.handler.Invoke(ctx, payload)
+}
+
 // Run run the worker
 func (w *Worker) Run() error {
+	log.WithField("worker", *w).Debug("Run worker")
+	handlers := map[string]interface{}{w.handler.Name(): w.handler.Handle}
+	worker, err := machinery.Worker(w.ID, handlers)
+	if err != nil {
+		return err
+	}
 	log.SetLevel(log.DebugLevel)
 	if w.Command == "lambda" {
-		lambda.Start(w.handler)
+		lambdaWorker, err := machinery.LambdaWorker(w.ID, handlers)
+		if err != nil {
+			return err
+		}
+		lambda.Start(&LambdaHandler{lambdaWorker, w.handler})
 	} else if w.Command == "send" {
 		return w.handler.Handle(w.Config, w.Param, w.Data, "")
 	} else if w.Command == "dispatch" {
@@ -63,9 +118,10 @@ func (w *Worker) Run() error {
 		_, err = server.SendTask(sig)
 
 		return err
+	} else {
+		return worker.Launch()
 	}
-	handlers := map[string]interface{}{w.Name: w.handler.Handle}
-	return machinery.Worker(w.ID, handlers)
+	return err
 }
 
 // NewWorker new worker
