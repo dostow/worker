@@ -3,7 +3,6 @@ package worker
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	m "github.com/RichardKnop/machinery/v1"
 	"github.com/RichardKnop/machinery/v1/tasks"
@@ -41,14 +40,16 @@ func (h *LambdaHandler) Invoke(ctx context.Context, payload []byte) ([]byte, err
 	var err error
 	sqsMessage := messages.SQSMessage{}
 	if err = json.Unmarshal(payload, &sqsMessage); err == nil {
+		log.WithField("msg", string(payload)).Debugf("received SQS message")
 		for _, record := range sqsMessage.Records {
+			log := log.WithField("message_id", record.MessageId)
 			body := *record.Body
 			if gjson.Get(body, "Name").Exists() {
 				sig := &tasks.Signature{}
 				if err = json.Unmarshal([]byte(body), &sig); err == nil {
 					err = h.worker.Process(sig)
 					if err != nil {
-						return nil, fmt.Errorf("machinery could not process task - %s", err.Error())
+						log.WithError(err).WithField("record", record).Error("machinery could not process task from record")
 					}
 					// state, err := h.worker.GetServer().GetBackend().GetState(sig.UUID)
 					// if err == nil {
@@ -57,17 +58,20 @@ func (h *LambdaHandler) Invoke(ctx context.Context, payload []byte) ([]byte, err
 					// if broker, ok := h.worker.GetServer().GetBroker().(*sqs.Broker); ok {
 					// 	broker.DeleteReceiptHandler(record.ReceiptHandle)
 					// }
-					return nil, err
 				} else {
-					log.WithField("body", body).Debugf("could not parse signature - %s", err.Error())
+					log.WithError(err).WithField("body", body).Errorf("could not parse task signature - %s", err.Error())
+					return nil, err
 				}
 			} else {
+				log.WithField("msg", sqsMessage).Error("task signature is invalid")
 				// if broker, ok := h.worker.GetServer().GetBroker().(*sqs.Broker); ok {
 				// 	broker.DeleteReceiptHandler(record.ReceiptHandle)
 				// }
 			}
 		}
+		return nil, nil
 	}
+	log.WithField("msg", string(payload)).Error("could not handle unknown message")
 	return h.handler.Invoke(ctx, payload)
 }
 

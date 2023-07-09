@@ -35,7 +35,7 @@ func Server() (*machinery.Server, error) {
 		pubsubClient, err := pubsub.NewClient(
 			context.Background(),
 			unsplit[2],
-			option.WithServiceAccountFile(sf),
+			option.WithCredentialsFile(sf),
 		)
 		if err != nil {
 			panic(err)
@@ -97,7 +97,7 @@ func LambdaWorker(consumerTag string, workerTasks map[string]interface{}) (*mach
 		pubsubClient, err := pubsub.NewClient(
 			context.Background(),
 			unsplit[2],
-			option.WithServiceAccountFile(sf),
+			option.WithCredentialsFile(sf),
 		)
 		if err != nil {
 			panic(err)
@@ -117,11 +117,11 @@ func LambdaWorker(consumerTag string, workerTasks map[string]interface{}) (*mach
 	worker := server.NewWorker(consumerTag, 0)
 
 	errorhandler := func(err error) {
-		log.WithError(err).Error("task failed")
+		log.WithError(err).Error("task error")
 	}
 
 	pretaskhandler := func(signature *tasks.Signature) {
-		log.Debugf("START: %s %s", signature.Name, signature.UUID)
+		log.WithField("args", signature.Args).Debugf("START: %s %s", signature.Name, signature.UUID)
 	}
 
 	posttaskhandler := func(signature *tasks.Signature) {
