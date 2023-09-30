@@ -43,6 +43,8 @@ func Server() (*machinery.Server, error) {
 		cnf.GCPPubSub = &config.GCPPubSubConfig{
 			Client: pubsubClient,
 		}
+	} else if strings.Contains(cnf.Broker, "redis") {
+		cnf.TLSConfig = nil
 	}
 	return machinery.NewServer(cnf)
 }
