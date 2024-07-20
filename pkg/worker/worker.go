@@ -71,7 +71,7 @@ func (h *LambdaHandler) Invoke(ctx context.Context, payload []byte) ([]byte, err
 		}
 		return nil, nil
 	}
-	log.WithField("msg", string(payload)).Error("could not handle unknown message")
+	log.WithField("msg", string(payload)).WithField("jsonError", err.Error()).Error("could not handle unknown message")
 	return h.handler.Invoke(ctx, payload)
 }
 
